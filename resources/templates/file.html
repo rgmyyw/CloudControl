@@ -272,7 +272,7 @@
        dictCancelUploadConfirmation: "你确定要取消上传吗?",
        dictRemoveFile: "移除文件",
        uploadMultiple:false,
-       headers:{'Access-Control-Allow-Origin': "0"},
+       headers:{'Access-Control-Allow-Origin': "0", 'X-CC-Token': "{{ token }}"},
        init: function() {
            //上传文件时触发的事件
            this.on("addedfile", function(file) {

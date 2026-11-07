@@ -3,3 +3,8 @@
 /vendor
 *.idea
 /log
+.venv/
+__pycache__/
+config/token.txt
+tools/minicap-shim/minicap-shim-arm64
+tools/minitouch-shim/minitouch-shim-arm64

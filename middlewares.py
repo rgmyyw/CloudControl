@@ -19,16 +19,16 @@ async def handle_404(request):
     :param request: request请求
     :return: 返回404页面
     """
-    return aiohttp_jinja2.render_template('404.html', request, {})
+    return aiohttp_jinja2.render_template('404.html', request, {}, status=404)
 
 
 async def handle_500(request: web.Request):
     """
     500模板
     :param request: request请求
-    :return: 返回404页面
+    :return: 返回500页面
     """
-    return aiohttp_jinja2.render_template('500.html', request, {})
+    return aiohttp_jinja2.render_template('500.html', request, {}, status=500)
 
 
 def create_error_middleware(overrides):
