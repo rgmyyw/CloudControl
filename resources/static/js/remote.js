@@ -64,6 +64,7 @@ window.app = new Vue({
       text: "",
       disabled: true,
     },
+    whatsinputFallback: false,
     websockets:{
       winput: null,
     },
@@ -246,11 +247,18 @@ window.app = new Vue({
       }
       ws.onerror = (ev) => {
         console.error(ev)
+        // 手机未装 WhatsInput 输入法时走回退：经 atx-agent 的 jsonrpc 代理
+        // 对当前焦点输入框 setText（语义为整段替换，与前端每次发全量文本一致）
+        if (ws === this.websockets.winput) {
+          this.websockets.winput = null;
+          this.whatsinputFallback = true;
+          this.whatsinput.disabled = false;
+        }
         defer.reject()
       }
       ws.onclose = (ev) => {
         console.log("winput closed")
-        if (ws === this.websockets.winput) {
+        if (ws === this.websockets.winput && !this.whatsinputFallback) {
           this.websockets.winput = null;
           this.whatsinput.disabled = true;
           this.whatsinput.text = null;
@@ -258,9 +266,22 @@ window.app = new Vue({
       }
       return defer;
     },
+    jsonrpc(method, params) {
+      return fetch(this.deviceUrl + "/jsonrpc/0", {
+        method: "post",
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: method, params: params })
+      }).then(ret => ret.json())
+    },
     sendInputText() {
         console.log("sync", this.whatsinput.text);
         let ws = this.websockets.winput;
+        if (!ws) {
+          // 回退：对手机上当前焦点输入框整段替换文本
+          const sel = { mask: 0x020000, focused: true, index: 0, instance: 0 } // 0x020000 = MASK_FOCUSED
+          this.jsonrpc("setText", [sel, this.whatsinput.text])
+          return
+        }
         ws.send(JSON.stringify({
           type: "InputEdit",
           text: this.whatsinput.text,
@@ -270,6 +291,10 @@ window.app = new Vue({
       console.log("Sync key", key)
       let code = { "enter": 66, "tab": 61 }[key] || key;
       let ws = this.websockets.winput;
+      if (!ws) {
+        this.jsonrpc("pressKey", [key])
+        return
+      }
       ws.send(JSON.stringify({
         type: "InputKey",
         code: "" + code,
