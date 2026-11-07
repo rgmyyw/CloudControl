@@ -57,6 +57,10 @@ def create_error_middleware(overrides):
 
             raise
 
+        except ConnectionResetError:
+            # 客户端提前断开（刷新/关页面），无需写回也无须记录堆栈
+            return web.Response()
+
     return error_middleware
 
 
