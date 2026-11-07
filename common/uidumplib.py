@@ -95,9 +95,6 @@ def parse_uiautomator_node(node):
             ks[key] = None
         elif f:
             ks[key] = f(value)
-    if 'bounds' in ks:
-        lx, ly, rx, ry = map(int, ks.pop('bounds'))
-        ks['rect'] = dict(x=lx, y=ly, width=rx-lx, height=ry-ly)
     return ks
 
 
