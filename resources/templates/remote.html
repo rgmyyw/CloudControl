@@ -242,6 +242,54 @@
                                       微信
                                     </button>
                                     <hr>
+                                    <div style="margin-bottom:2px; color:#999; font-size:11px">导航按键</div>
+                                    <button class="btn btn-sm btn-outline-secondary"
+                                      @click="runShell('input keyevent 3')" title="KEYCODE_HOME">
+                                      <i class="fa fa-home"></i> Home
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-secondary"
+                                      @click="runShell('input keyevent 4')" title="KEYCODE_BACK">
+                                      <i class="fa fa-arrow-left"></i> 返回
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-secondary"
+                                      @click="runShell('input keyevent 187')" title="KEYCODE_APP_SWITCH">
+                                      <i class="fa fa-clone"></i> 最近任务
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-secondary"
+                                      @click="runShell('input keyevent 224')" title="KEYCODE_WAKEUP">
+                                      <i class="fa fa-lightbulb-o"></i> 亮屏
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-secondary"
+                                      @click="runShell('input keyevent 223')" title="KEYCODE_SLEEP">
+                                      <i class="fa fa-moon-o"></i> 灭屏
+                                    </button>
+                                    <div style="margin:6px 0 2px; color:#999; font-size:11px">系统面板</div>
+                                    <button class="btn btn-sm btn-outline-primary"
+                                      @click="runShell('am start -a android.settings.APPLICATION_SETTINGS')">
+                                      <i class="fa fa-list"></i> 应用管理
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-primary"
+                                      @click="runShell('am start -a android.settings.BLUETOOTH_SETTINGS')">
+                                      <i class="fa fa-bluetooth-b"></i> 蓝牙
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-primary"
+                                      @click="runShell('am start -a android.settings.DISPLAY_SETTINGS')">
+                                      <i class="fa fa-television"></i> 显示
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-primary"
+                                      @click="runShell('am start -a android.intent.action.POWER_USAGE_SUMMARY')">
+                                      <i class="fa fa-battery-half"></i> 电池
+                                    </button>
+                                    <div style="margin:6px 0 2px; color:#999; font-size:11px">设备操作</div>
+                                    <button class="btn btn-sm btn-outline-success"
+                                      @click="quickScreenshot()">
+                                      <i class="fa fa-camera"></i> 截屏到手机
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger"
+                                      @click="quickReboot()">
+                                      <i class="fa fa-power-off"></i> 重启设备
+                                    </button>
+                                    <hr>
                                     <button id ="start" class="btn btn-sm btn-outline-primary"
                                       @click="atxAgentManager('start')">
                                       <i class="fa fa-recycle"></i>

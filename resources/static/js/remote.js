@@ -317,6 +317,22 @@ window.app = new Vue({
         return ret;
       })
     },
+    quickScreenshot() {
+      var savePath = "/sdcard/Pictures/Screenshots/"
+      this.runShell("mkdir -p " + savePath + " && screencap -p " + savePath + "cc_$(date +%s).png")
+        .then(ret => {
+          if (ret && ret.error) {
+            toastr.error("截屏失败: " + (ret.output || ret.error))
+            return
+          }
+          toastr.success("已保存到手机 " + savePath)
+        })
+    },
+    quickReboot() {
+      if (!window.confirm('确定重启该设备？重启期间无法远程操作。')) return
+      this.runShell('reboot')
+      toastr.info('重启命令已下发')
+    },
     nodes: function () {
       return this.originNodes
     },
