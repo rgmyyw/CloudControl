@@ -20,7 +20,7 @@ class YamlParser(object):
 
     def __init__(self, fpath):
         with open(fpath,encoding='utf-8') as fh:
-            self.attributes = yaml.load(fh)
+            self.attributes = yaml.safe_load(fh)
 
     def __getattr__(self, name):
         val = self.get(name)
