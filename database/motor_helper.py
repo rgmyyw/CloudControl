@@ -112,10 +112,10 @@ class MotorHelper(object):
 
     async def find_device_list(self):
         """
-        获取设备列表
+        获取设备列表（含离线设备，present 字段区分）
         :return:
         """
-        cursor = self.conn.atxserver.devices.find({"present": True}, {"_id": 0})
+        cursor = self.conn.atxserver.devices.find({}, {"_id": 0})
         devices_list = []
         while await cursor.fetch_next:
             info = cursor.next_object()

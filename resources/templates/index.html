@@ -117,19 +117,46 @@
       <!--</div>-->
     </form>
       <!--form end -->
-    <div class="table-responsive">
+    <div class="row" style="margin-top:10px">
+      <div class="col-md-2"><div class="stat-card"><div class="stat-num">{{onlineCountAll}}<span class="stat-sub"> / {{devices.length}}</span></div><div class="stat-label">在线 / 总设备</div></div></div>
+      <div class="col-md-2"><div class="stat-card"><div class="stat-num">{{usingCount}}</div><div class="stat-label">使用中</div></div></div>
+      <div class="col-md-2"><div class="stat-card"><div class="stat-num">{{avgBattery}}<span class="stat-sub">%</span></div><div class="stat-label">在线平均电量</div></div></div>
+      <div class="col-md-2"><div class="stat-card" :class="lowBatteryCount ? 'stat-warn' : ''"><div class="stat-num">{{lowBatteryCount}}</div><div class="stat-label">低电量 (&lt;30%)</div></div></div>
+      <div class="col-md-2"><div class="stat-card"><div class="stat-num">{{offlineCount}}</div><div class="stat-label">离线设备</div></div></div>
+    </div>
+    <div class="filter-chips">
+      <div class="btn-group btn-group-xs">
+        <button class="btn" :class="filterMode=='all' ? 'btn-primary' : 'btn-default'" @click="filterMode='all'">全部</button>
+        <button class="btn" :class="filterMode=='online' ? 'btn-primary' : 'btn-default'" @click="filterMode='online'">在线</button>
+        <button class="btn" :class="filterMode=='offline' ? 'btn-primary' : 'btn-default'" @click="filterMode='offline'">离线</button>
+        <button class="btn" :class="filterMode=='lowbatt' ? 'btn-warning' : 'btn-default'" @click="filterMode='lowbatt'">低电量</button>
+      </div>
     </div>
     <div class="row">
-        <div  v-for="(d, index) in filteredDevices" class="col-md-1 device" :key="index" :id='"phone_"+index'>
-          <div class="box_phone" @mouseenter='show("phone_"+index)' @mouseleave='hidden("phone_"+index)'>
-            <label :from='"all_"+index' class="lable_font"><input type="checkbox" :id='"all_"+index' v-on:click='check_input("all_"+index, d.udid)'>{{d.ip}}</label>
-            <a :href='"/devices/"+d.udid+"/remote"' target="_blank">
-              <img :src='"http://"+d.ip+":7912/screenshot"' :alt="d.udid" class="img_height" width="150" height="300">
+        <div v-for="(d, index) in filteredDevices" class="col-md-2 device" :key="d.udid" :id='"phone_"+index'>
+          <div class="box_phone device-card" :class="{offline: !d.present}" @mouseenter='show("phone_"+index)' @mouseleave='hidden("phone_"+index)'>
+            <div class="card-head">
+              <span class="status-dot" :class="d.present ? 'dot-on' : 'dot-off'" :title="d.present ? '在线' : '离线'"></span>
+              <strong style="flex:1 1 auto; overflow:hidden; text-overflow:ellipsis;">{{d.brand}} {{d.model}}</strong>
+              <label v-if="d.present" style="margin:0; flex:none">
+                <input type="checkbox" :id='"all_"+index' v-on:click='check_input("all_"+index, d.udid)'>
+              </label>
+            </div>
+            <div class="meta-line" style="margin:0 0 4px"><span class="ver-badge">Android {{d.version}}</span> {{d.sdk}} (SDK)</div>
+            <a v-if="d.present" :href='"/devices/"+d.udid+"/remote"' target="_blank">
+              <img class="img_height thumb" :src='"http://"+d.ip+":7912/screenshot"' :data-src='"http://"+d.ip+":7912/screenshot"' :alt="d.udid" width="100%">
             </a>
+            <div v-else class="thumb-offline">离线</div>
+            <div style="margin-top:6px" v-if="d.battery">
+              <div class="battery-bar"><div class="battery-fill" :class="battClass(d)" :style="{width: (d.battery.level || 0) + '%'}"></div></div>
+              <div class="meta-line">
+                <i v-if="d.battery.acPowered || d.battery.usbPowered" class="fa fa-bolt" title="充电中"></i>
+                电量 {{d.battery.level}}% · {{(d.battery.temperature/10).toFixed(1)}}℃
+              </div>
+            </div>
+            <div class="meta-line">{{d.display.width}}×{{d.display.height}} · {{d.memory.around}} · {{d.cpu.cores}}核</div>
+            <div class="meta-line" :title="'最近心跳 ' + lastSeenText(d)"><i class="fa fa-wifi"></i> {{d.ip}} · {{lastSeenText(d)}}</div>
             <div class="btn-group-vertical posti hidden">
-              <!--<a href="#" class="btn1 btn-primary" role="button" @click="Reboot(d.ip)">重启手机</a>-->
-              <!--<a href="#" class="btn1 btn-primary" role="button">停止应用</a>-->
-              <!--<a href="#" class="btn1 btn-primary" role="button">故障修复</a>-->
             </div>
           </div>
         </div>
@@ -143,6 +170,7 @@
         devices: [],
         errmsg: "",
         searchText: "",
+        filterMode: "all",
         drvices_list: [] //设备列表
       },
       directives: {
@@ -180,26 +208,65 @@
       },
       computed: {
         filteredDevices: function () {
+          var mode = this.filterMode;
+          var list = this.devices.filter(function (d) {
+            if (mode === 'online' && !d.present) return false;
+            if (mode === 'offline' && d.present) return false;
+            if (mode === 'lowbatt') {
+              if (!d.present || !d.battery) return false;
+              if (d.battery.level >= 30) return false;
+            }
+            return true;
+          });
           var searchText = this.searchText.trim();
-          if (!searchText.length) {
-            return this.onlineDevices;
-          }
-          var keywords = searchText.split(/\s+/).map(function (key) {
-            return key.toLowerCase()
-          })
-          return this.onlineDevices.filter(function (d) {
-            return keywords.every(function (key) {
-              // searched properties
-              return [d.propertyId, d.ip, d.serial, d.brand, d.version, (d.product || {}).name].some(function (value) {
-                return value && ("" + value).toLowerCase().includes(key)
+          if (searchText.length) {
+            var keywords = searchText.split(/\s+/).map(function (key) {
+              return key.toLowerCase()
+            })
+            list = list.filter(function (d) {
+              return keywords.every(function (key) {
+                // searched properties
+                return [d.propertyId, d.ip, d.serial, d.brand, d.model, d.version, d.udid].some(function (value) {
+                  return value && ("" + value).toLowerCase().includes(key)
+                })
               })
             })
+          }
+          // 在线优先，其次电量低的排前（提醒充电）
+          return list.slice().sort(function (a, b) {
+            if (!!a.present !== !!b.present) return a.present ? -1 : 1;
+            var la = (a.battery || {}).level == null ? 999 : a.battery.level;
+            var lb = (b.battery || {}).level == null ? 999 : b.battery.level;
+            return la - lb;
           })
         },
         onlineDevices: function () {
           return this.devices.filter(function (d) {
             return d.present;
           })
+        },
+        onlineCountAll: function () {
+          return this.onlineDevices.length;
+        },
+        offlineCount: function () {
+          return this.devices.length - this.onlineDevices.length;
+        },
+        usingCount: function () {
+          return this.onlineDevices.filter(function (d) {
+            return d.using
+          }).length;
+        },
+        avgBattery: function () {
+          var levels = this.onlineDevices
+            .filter(function (d) { return d.battery && d.battery.level != null })
+            .map(function (d) { return d.battery.level });
+          if (!levels.length) return '—';
+          return Math.round(levels.reduce(function (a, b) { return a + b }, 0) / levels.length);
+        },
+        lowBatteryCount: function () {
+          return this.onlineDevices.filter(function (d) {
+            return d.battery && d.battery.level < 30
+          }).length;
         },
         onlineCount: function () {
           return this.filteredDevices.filter(function (d) {
@@ -208,6 +275,27 @@
         },
       },
       methods: {
+        battClass: function (d) {
+          var lv = (d.battery || {}).level;
+          if (lv == null) return 'batt-green';
+          if (lv >= 60) return 'batt-green';
+          if (lv >= 30) return 'batt-yellow';
+          return 'batt-red';
+        },
+        relTime: function (t) {
+          if (!t) return '—';
+          var m = moment(t, 'YYYY-MM-DD HH:mm:ss');
+          return m.isValid() ? m.fromNow() : t;
+        },
+        lastSeenText: function (d) {
+          // last_seen 为距最近一次心跳的秒数（内存会话）；无会话时回退库内更新时间
+          if (d.last_seen == null) return this.relTime(d.update_time);
+          var s = d.last_seen;
+          if (s < 60) return s + '秒前';
+          if (s < 3600) return Math.floor(s / 60) + '分钟前';
+          if (s < 86400) return Math.floor(s / 3600) + '小时前';
+          return Math.floor(s / 86400) + '天前';
+        },
         releaseDevice: function (udid) {
           $.ajax({
             url: "/devices/" + udid + "/reserved",
@@ -419,16 +507,37 @@
       }
     })
   </script>
+    <style>
+      .stat-card { background:#fff; border:1px solid #e5e5e5; border-radius:6px; padding:10px 14px; margin-bottom:12px; }
+      .stat-card.stat-warn { border-color:#f0ad4e; background:#fcf8e3; }
+      .stat-num { font-size:24px; font-weight:700; line-height:1.1; }
+      .stat-sub { font-size:13px; color:#999; font-weight:400; }
+      .stat-label { font-size:12px; color:#888; }
+      .filter-chips { margin-bottom:10px; }
+      .device-card { background:#fff; border:1px solid #e0e0e0; border-radius:6px; padding:8px; margin-bottom:14px; }
+      .device-card.offline { opacity:.55; background:#f7f7f7; }
+      .card-head { display:flex; align-items:center; gap:5px; margin-bottom:6px; overflow:hidden; white-space:nowrap; }
+      .status-dot { width:8px; height:8px; border-radius:50%; display:inline-block; flex:none; }
+      .dot-on { background:#5cb85c; box-shadow:0 0 3px #5cb85c; }
+      .dot-off { background:#bbb; }
+      .thumb-offline { height:240px; background:#eee; border-radius:4px; display:flex; align-items:center; justify-content:center; color:#aaa; }
+      .battery-bar { height:8px; background:#eee; border-radius:4px; overflow:hidden; }
+      .battery-fill { height:100%; border-radius:4px; transition:width .3s; }
+      .batt-green { background:#5cb85c; } .batt-yellow { background:#f0ad4e; } .batt-red { background:#d9534f; }
+      .meta-line { font-size:11px; color:#888; margin-top:2px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+      .ver-badge { background:#337ab7; color:#fff; font-size:10px; padding:1px 5px; border-radius:8px; flex:none; }
+    </style>
 </body>
 <script type="text/javascript">
-    //刷新图片
+    //刷新图片：以 data-src 为基准重建 URL，避免 ?t= 无限拼接；离线设备不刷
     function refersh(){
-        $(".device img").each(function(index,element) {
-            src=element.src+"?t="+Math.random();
-            $(this).attr({src:src});
+        $(".device img.thumb").each(function(index,element) {
+            var base = element.getAttribute('data-src');
+            if (!base) return;
+            element.src = base + "?t=" + Date.now();
         });
     }
-    setInterval(refersh, 5000)
+    setInterval(refersh, 15000)
 </script>
 
 </html>

@@ -32,6 +32,7 @@ route = web.RouteTableDef()
 localhost = get_host_ip()
 session = {}
 loop = None
+HEARTBEAT_TIMEOUT = 20  # 心跳超时秒数，与会话计时器保持一致
 # 阻塞型设备操作（u2 截图/层级解析）放线程池，避免拖住事件循环
 executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix="device-io")
 
@@ -263,12 +264,19 @@ async def query_info(request: web.Request):
 @route.get("/list")
 async def device_list(request: web.Request):
     """
-    手机列表查询
+    手机列表查询（附加 last_seen：距最近一次心跳的秒数，取自内存会话）
     :param request:
     :return:
     """
     logger.debug(request.url)
     device = await phone_service.query_device_list()
+    now = time.time()
+    for d in device:
+        s = session.get(d.get("udid"))
+        if s and s.get("timer"):
+            d["last_seen"] = max(0, int(now - (s["timer"] - HEARTBEAT_TIMEOUT)))
+        else:
+            d["last_seen"] = None
     return web.json_response(text=json.dumps(device))
 
 
@@ -315,11 +323,11 @@ async def heartbeat(request: web.Request):
             await phone_service.re_connected(identifier, remote_host)
         # 重置timer 倒计时
         t = time.time()
-        session[identifier]["timer"] = t + 20
+        session[identifier]["timer"] = t + HEARTBEAT_TIMEOUT
     # 如果没有，进入onconnected,阻塞
     else:
         # onconnected
-        phone_seesion = get_phone_session(identifier, remote_host, time.time() + 20)
+        phone_seesion = get_phone_session(identifier, remote_host, time.time() + HEARTBEAT_TIMEOUT)
         session[identifier] = phone_seesion
         await phone_service.on_connected(identifier, remote_host)
 
