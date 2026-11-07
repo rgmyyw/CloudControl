@@ -9,6 +9,9 @@
 @time: 2019-04-01 18:07
 ---------------------------------------
 """
+import base64
+import io
+
 from common import uidumplib
 from service.device_service import DeviceService
 
@@ -28,7 +31,13 @@ class AndroidDevice(DeviceService):
         andrroid 截图与hierarchy相关
         :return:
         """
-        return self._d.screenshot()
+        # atx-agent 的 /screenshot/0 代理使用无参 takeScreenshot 调用，
+        # 新版 uia2.jar (com.wetest.uia2.Main) 要求显式传入 (scale, quality)，
+        # 故绕过代理直接走 JSON-RPC
+        data = self._d.jsonrpc.takeScreenshot(1.0, 90)
+        buff = io.BytesIO(base64.standard_b64decode(data))
+        from PIL import Image
+        return Image.open(buff)
 
     def dump_hierarchy(self):
         """
