@@ -1,0 +1,28 @@
+services:
+  mongo:
+    image: mongo:4.4
+    container_name: cloudcontrol-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - ${HOME}/Documents/docker/mounts/cloudcontrol-mongo/data:/data/db
+
+  server:
+    build: .
+    container_name: cloudcontrol-server
+    restart: unless-stopped
+    depends_on:
+      - mongo
+    ports:
+      - "8000:8000"
+    environment:
+      # 容器内 mongo 走服务名
+      CC_DB_URL: mongodb://mongo:27017
+      # 对外（手机心跳/回调）地址。留空则自动探测容器 IP，
+      # 容器部署在 NAT 后面时建议取消注释并填部署机的局域网 IP
+      # CC_HOST_IP: 192.168.100.110
+    volumes:
+      # token.txt 持久化，重启不换令牌
+      - ./config:/app/config
+    command: python main.py

@@ -9,7 +9,7 @@
 #   com.github.uiautomator(+test) apk（可缺，u2.jar 路线不依赖）
 
 SERIAL="${1:-9bddb250}"
-SERVER="${2:-192.168.100.110:8000}"
+SERVER="${2:-$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1):8000}"
 
 adb -s "$SERIAL" shell "nohup /data/local/tmp/atx-agent server -d -t $SERVER >/data/local/tmp/atx-agent.log 2>&1 &"
 adb -s "$SERIAL" shell "nohup env CLASSPATH=/data/local/tmp/u2.jar app_process / com.wetest.uia2.Main -p 9008 >/data/local/tmp/u2.log 2>&1 &"

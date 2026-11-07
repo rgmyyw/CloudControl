@@ -37,21 +37,44 @@ class PhoneServiceImpl(PhoneService):
             logger.error(e)
             return {}
 
+    async def resolve_device(self, identifier, host):
+        """
+        拉取设备 info 并确定设备真实 ip。
+        容器部署（Docker Desktop 等）下心跳连接的 remote 可能被 NAT 成网关地址，
+        此时回退用库里的历史 ip 再试一次；仍失败则保留历史 ip，绝不用网关地址覆盖。
+        :return: (info dict, ip or None)
+        """
+        save = await self.fetch_agent_info(host)
+        if save:
+            return save, save.get("ip", host)
+        stored = await self.motor.find_by_udid(identifier)
+        stored_ip = (stored or {}).get("ip")
+        if stored_ip and stored_ip != host:
+            save = await self.fetch_agent_info(stored_ip)
+            if save:
+                return save, save.get("ip", stored_ip)
+            return save, stored_ip
+        return save, None
+
     async def on_connected(self, identifier, host):
         logger.debug(identifier + " on_connected")
-        save = await self.fetch_agent_info(host)
+        save, ip = await self.resolve_device(identifier, host)
         current_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time()))
-        item = {"update_time": current_time, "ip": host, "present": True, "udid": identifier,
+        item = {"update_time": current_time, "present": True, "udid": identifier,
                 "port": 7912, "using": False, "is_server": False}
+        if ip:
+            item["ip"] = ip
         save.update(item)
         await self.motor.upsert(identifier, save)
 
     async def re_connected(self, identifier, host):
         logger.debug(identifier + " re_connected")
-        save = await self.fetch_agent_info(host)
+        save, ip = await self.resolve_device(identifier, host)
         current_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time()))
-        item = {"update_time": current_time, "ip": host, "present": True, "udid": identifier,
+        item = {"update_time": current_time, "present": True, "udid": identifier,
                 "port": 7912, "using": False}
+        if ip:
+            item["ip"] = ip
         save.update(item)
         await self.motor.upsert(identifier, save)
 

@@ -1,0 +1,10 @@
+.venv/
+.git/
+log/
+*.log
+*.gif
+*.pptx
+tools/minicap-shim/minicap-shim-arm64
+tools/minitouch-shim/minitouch-shim-arm64
+config/token.txt
+__pycache__/

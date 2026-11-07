@@ -20,6 +20,16 @@
 - mongodb
 - python aiohttp
 
+### Docker Compose 部署（推荐）
+```bash
+docker compose up -d --build
+```
+包含 mongo + server 两个服务。注意：
+- 手机心跳上报的设备 IP 由服务端从心跳连接获取；**Docker Desktop (Mac) 会把连接源 IP 改写成网关地址**，
+  服务端会自动回退使用数据库中的历史 IP，设备换网后需在宿主机直跑一次或手动修正
+- 如需指定服务对外地址（手机回调用），在 compose 的 server 服务里设置 `CC_HOST_IP` 环境变量
+- 数据库地址可用 `CC_DB_URL` 覆盖（compose 内默认走服务名 mongo）
+
 ### 使用步骤
 1. 建立 atxserver 数据库（monogodb）。无需建立表
 2. python main.py 直接运行

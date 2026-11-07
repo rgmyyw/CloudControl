@@ -29,9 +29,10 @@ class MotorHelper(object):
 
     def __init__(self):
         """
-        初始化配置，连接mongo
+        初始化配置，连接mongo；容器部署时用 CC_DB_URL 覆盖配置文件地址
         """
-        self.motor_uri = conf.db_configs['url']
+        import os
+        self.motor_uri = os.environ.get("CC_DB_URL") or conf.db_configs['url']
         self.__connected()
 
     def __connected(self):
