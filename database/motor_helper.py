@@ -31,11 +31,7 @@ class MotorHelper(object):
         """
         初始化配置，连接mongo
         """
-        # /{conf.db_configs['db_name']}
-        if conf.db_configs["user"]:
-            self.motor_uri = conf.db_configs['url']
-        else:
-            self.motor_uri = conf.db_configs['url']
+        self.motor_uri = conf.db_configs['url']
         self.__connected()
 
     def __connected(self):
@@ -100,7 +96,7 @@ class MotorHelper(object):
         """
         根据udid查询设备列表
         :param udid: 唯一标示符
-        :return: devices设备
+        :return: devices设备，不存在时返回 None
         """
         logger.debug("udid >>>>>> " + udid)
         cursor = self.conn.atxserver.devices.find({'udid': udid}, {"_id": 0})
@@ -108,7 +104,7 @@ class MotorHelper(object):
         while await cursor.fetch_next:
             info = cursor.next_object()
             devices_list.append(info)
-        return devices_list[0]
+        return devices_list[0] if devices_list else None
 
         # async_gen = (item async for item in curosr)
         # return async_gen
@@ -175,16 +171,9 @@ class MotorHelper(object):
         根据id删除安装文件记录
         :param group:
         :param filename:
-        :return: installed_file集合
+        :return: installed_file 集合
         """
         return await self.conn.atxserver.installed_file.delete_many({"group": group, "filename": filename})
-
-    async def delect_devices(self):
-        """
-        删除集合devices
-        :return: devices集合
-        """
-        return await self.conn.atxserver.devices.delete_many({})
 
 
 motor = MotorHelper()

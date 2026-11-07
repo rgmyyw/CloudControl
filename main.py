@@ -15,7 +15,6 @@ import aiohttp_jinja2
 from aiohttp import web
 from resources.routes_control import setup_routes
 from middlewares import setup_middlewares
-from service.impl.phone_service_impl import phone_service
 from config import conf
 from common.logger import logger
 
@@ -30,15 +29,6 @@ def setup_static_routes(app):
                           name='static')
 
 
-def init_db(_loop):
-    """
-    删除表atxserver.devices
-    :return:
-    """
-    task = _loop.create_task(phone_service.delect_devices())
-    asyncio.gather(task)
-
-
 async def init(_loop):
     """
     初始化
@@ -46,8 +36,6 @@ async def init(_loop):
     :return:
     """
     app = web.Application(loop=_loop)
-    # 初始化数据库
-    init_db(_loop)
     # 配置路由
     setup_routes(_loop, app)
     # 配置页面跳转中间件
