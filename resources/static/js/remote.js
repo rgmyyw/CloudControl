@@ -267,10 +267,14 @@ window.app = new Vue({
       return defer;
     },
     jsonrpc(method, params) {
+      // 手机端 JSON-RPC 服务按单字节解码请求体，原始 UTF-8 中文会乱码；
+      // 把非 ASCII 字符全部转成 \\uXXXX 转义，保证请求体纯 ASCII
+      const body = JSON.stringify({ jsonrpc: "2.0", id: 1, method: method, params: params })
+        .replace(/[\u0080-\uFFFF]/g, ch => "\\u" + ch.charCodeAt(0).toString(16).padStart(4, "0"))
       return fetch(this.deviceUrl + "/jsonrpc/0", {
         method: "post",
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: method, params: params })
+        body: body
       }).then(ret => ret.json())
     },
     sendInputText() {
